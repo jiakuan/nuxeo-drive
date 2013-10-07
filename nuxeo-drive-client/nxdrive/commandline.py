@@ -41,6 +41,7 @@ Possible commands:
 - unbind-server
 - bind-root
 - unbind-root
+- local_folders
 - status
 
 To get options for a specific command:
@@ -208,6 +209,16 @@ def make_cli_parser(add_subparsers=True):
     )
     console_parser.set_defaults(command='console')
 
+    # Get the local folders bound to a Nuxeo server
+    local_folder_parser = subparsers.add_parser(
+        'local_folders',
+        help='Fetch the local folders bound to a Nuxeo server.',
+        parents=[common_parser],
+    )
+    local_folder_parser.set_defaults(command='local_folders')
+
+    # Get the children status of the given folder
+    # Default is the Drive local folder
     status_parser = subparsers.add_parser(
         'status',
         help='Fetch the status info of the children of a given folder.',
@@ -372,6 +383,10 @@ class CliHandler(object):
     def stop(self, options=None):
         self.controller.stop()
         return 0
+
+    def local_folders(self, options):
+        server_bindings = self.controller.list_server_bindings()
+        return [sb.local_folder for sb in server_bindings]
 
     def status(self, options):
         states = self.controller.children_states(options.folder)
