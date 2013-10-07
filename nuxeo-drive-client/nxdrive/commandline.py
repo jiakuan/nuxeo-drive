@@ -386,7 +386,8 @@ class CliHandler(object):
 
     def local_folders(self, options):
         server_bindings = self.controller.list_server_bindings()
-        return [sb.local_folder for sb in server_bindings]
+        print [sb.local_folder for sb in server_bindings]
+        return 0
 
     def status(self, options):
         states = self.controller.children_states(options.folder)
