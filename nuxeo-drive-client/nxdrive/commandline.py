@@ -41,6 +41,7 @@ Possible commands:
 - unbind-server
 - bind-root
 - unbind-root
+- status
 
 To get options for a specific command:
 
@@ -214,7 +215,8 @@ def make_cli_parser(add_subparsers=True):
     )
     status_parser.set_defaults(command='status')
     status_parser.add_argument(
-        "folder", help="Path to a local Nuxeo Drive folder.")
+        "--folder", default=DEFAULT_NX_DRIVE_FOLDER,
+        help="Path to a local Nuxeo Drive folder.")
 
     # embedded test runner base on nose:
     test_parser = subparsers.add_parser(
@@ -373,8 +375,10 @@ class CliHandler(object):
 
     def status(self, options):
         states = self.controller.children_states(options.folder)
+        self.log.debug("Children status of %s:", options.folder)
         for filename, status in states:
-            print status + '\t' + filename
+            self.log.debug("%s | %s", filename, status)
+        print states
         return 0
 
     def edit(self, options):
