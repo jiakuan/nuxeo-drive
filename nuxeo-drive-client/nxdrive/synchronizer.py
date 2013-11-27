@@ -812,19 +812,32 @@ class Synchronizer(object):
                 doc_pair.get_local_abspath())
             doc_pair.update_state('synchronized', 'synchronized')
         else:
-            new_local_name = remote_client.conflicted_name(
-                doc_pair.local_name)
-            log.debug('Conflict being handled by renaming local "%s" to "%s"',
-                      doc_pair.local_name, new_local_name)
+            # https://dev.practice-insight.com/youtrack/issue/PINUXEO-1459
+            #
+            # When conflicts detected, send error email notification and stop
+            # Nuxeo Drive gracefully before the actual synchronisation.
+            local_info_str = str(local_info.__dict__) if local_info else 'None'
+            remote_info_str = str(remote_info.__dict__) if remote_info else 'None'
+            log.error('Conflicted file detected: \n\n'
+                      'local_info = %s \n\n'
+                      'remote_info = %s \n\n'
+                      'Going to stop ndrive process gracefully.' %
+                      (local_info_str, remote_info_str))
+            self._controller.stop()
 
-            # Let's rename the file
-            # The new local item will be detected as a creation and
-            # synchronized by the next iteration of the sync loop
-            local_client.rename(doc_pair.local_path, new_local_name)
-
-            # Let the remote win as if doing a regular creation
-            self._synchronize_remotely_created(doc_pair, session,
-                local_client, remote_client, local_info, remote_info)
+            # new_local_name = remote_client.conflicted_name(
+            #     doc_pair.local_name)
+            # log.debug('Conflict being handled by renaming local "%s" to "%s"',
+            #           doc_pair.local_name, new_local_name)
+            #
+            # # Let's rename the file
+            # # The new local item will be detected as a creation and
+            # # synchronized by the next iteration of the sync loop
+            # local_client.rename(doc_pair.local_path, new_local_name)
+            #
+            # # Let the remote win as if doing a regular creation
+            # self._synchronize_remotely_created(doc_pair, session,
+            #     local_client, remote_client, local_info, remote_info)
 
     def _detect_local_move_or_rename(self, doc_pair, session,
         local_client, local_info):
