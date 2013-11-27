@@ -892,7 +892,7 @@ class Synchronizer(object):
             #
             # When conflicts detected, send error email notification and stop
             # Nuxeo Drive gracefully before the actual synchronisation.
-            if not self.should_stop_synchronization():
+            if not self._is_told_to_stop():
                 local_info_str = str(local_info.__dict__) if local_info else 'None'
                 remote_info_str = str(remote_info.__dict__) if remote_info else 'None'
                 log.error('Conflicted file detected: \n\n'
@@ -915,6 +915,14 @@ class Synchronizer(object):
             # # Let the remote win as if doing a regular creation
             # self._synchronize_remotely_created(doc_pair, session,
             #     local_client, remote_client, local_info, remote_info)
+
+    def _is_told_to_stop(self):
+        """Check whether another process has told the synchronizer to stop"""
+        stop_file = os.path.join(self._controller.config_folder,
+                                 "stop_%d" % os.getpid())
+        if os.path.exists(stop_file):
+            return True
+        return False
 
     def _detect_local_move_or_rename(self, doc_pair, session,
         local_client, local_info):
