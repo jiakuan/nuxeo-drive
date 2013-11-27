@@ -166,6 +166,13 @@ class Controller(object):
         # share cookies using threadsafe jar
         self.cookie_jar = CookieJar()
 
+        # Default frontend to None
+        self._frontend = None
+
+    def register_frontend(self, frontend):
+        log.debug("Registering frontend (%s) in controller..." % str(frontend))
+        self._frontend = frontend
+
     def get_session(self):
         """Reuse the thread local session for this controller
 
@@ -698,13 +705,33 @@ class Controller(object):
             # TODO: synchronize to a dedicated special root for one time edit
             log.warning('Could not find local file for server_url=%s '
                         'and remote_ref=%s', server_url, remote_ref)
-            return
+
+            self._notify_cannot_live_edit()
+            return False
 
         # TODO: check synchronization of this state first
 
         # Find the best editor for the file according to the OS configuration
         file_path = state.get_local_abspath()
-        self.open_local_file(file_path)
+        if not os.path.exists(file_path):
+            self._notify_cannot_live_edit()
+            return False
+        else:
+            self.open_local_file(file_path)
+            return True
+
+    def _notify_cannot_live_edit(self,file_path=None):
+        # Display a user-friendly message in systemtray area. For more
+        # information, please see https://jira.nuxeo.com/browse/SUPNXP-9065
+        log.debug("Checking if frontend is attached: frontend=%s" % str(self._frontend))
+        if self._frontend is not None:
+            msg_body = 'The requested file not yet downloaded, please try again shortly'
+            if file_path is not None:
+                msg_body = "File '%s' not yet downloaded, please try again shortly" % file_path
+            self._frontend.notify_user_message('Cannot edit', msg_body)
+        else:
+            log.debug("No frontend attached, then no need to show message in system tray area")
+
 
     def open_local_file(self, file_path):
         """Launch the local OS program on the given file / folder."""
