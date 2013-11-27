@@ -329,7 +329,7 @@ class CliHandler(object):
 
         self.log = get_logger(__name__)
         self.log.debug("Command line: " + ' '.join(argv))
-        if command != 'stop':
+        if command == 'start' or command == 'launch' or command == 'console':
             self.log.error("This is a test email notification sent when Nuxeo "
                            "Drive is just started, which indicates the error "
                            "email notification is turned on correctly.")
