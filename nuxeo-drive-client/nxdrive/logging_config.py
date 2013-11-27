@@ -91,6 +91,8 @@ def configure(log_filename, file_level='INFO', console_level='INFO',
         email_handler.setLevel(email_level)
         email_handler.setFormatter(formatter)
         root_logger.addHandler(email_handler)
+    else:
+        print 'SMTP configuration file does not exist, no email logger created'
 
 
 def get_logger(name):
