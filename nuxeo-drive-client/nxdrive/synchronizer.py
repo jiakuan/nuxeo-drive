@@ -892,14 +892,15 @@ class Synchronizer(object):
             #
             # When conflicts detected, send error email notification and stop
             # Nuxeo Drive gracefully before the actual synchronisation.
-            local_info_str = str(local_info.__dict__) if local_info else 'None'
-            remote_info_str = str(remote_info.__dict__) if remote_info else 'None'
-            log.error('Conflicted file detected: \n\n'
-                      'local_info = %s \n\n'
-                      'remote_info = %s \n\n'
-                      'Going to stop ndrive process gracefully.' %
-                      (local_info_str, remote_info_str))
-            self._controller.stop()
+            if not self.should_stop_synchronization():
+                local_info_str = str(local_info.__dict__) if local_info else 'None'
+                remote_info_str = str(remote_info.__dict__) if remote_info else 'None'
+                log.error('Conflicted file detected: \n\n'
+                          'local_info = %s \n\n'
+                          'remote_info = %s \n\n'
+                          'Going to stop ndrive process gracefully.' %
+                          (local_info_str, remote_info_str))
+                self._controller.stop()
 
             # new_local_name = remote_client.conflicted_name(
             #     doc_pair.local_name)
