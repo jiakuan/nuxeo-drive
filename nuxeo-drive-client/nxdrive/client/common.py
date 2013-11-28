@@ -17,6 +17,7 @@ DEFAULT_IGNORED_SUFFIXES = [
     '.lock',  # some process use file locks
     '.LOCK',  # other locks
     '.part',  # partially downloaded files
+    'Thumbs.db',
 ]
 
 BUFFER_SIZE = 1024 ** 2
