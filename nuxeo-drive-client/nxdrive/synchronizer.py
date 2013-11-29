@@ -900,7 +900,7 @@ class Synchronizer(object):
                           'remote_info = %s \n\n'
                           'Going to stop ndrive process gracefully.' %
                           (local_info_str, remote_info_str))
-                self._controller.stop()
+                # self._controller.stop()
 
             # new_local_name = remote_client.conflicted_name(
             #     doc_pair.local_name)
