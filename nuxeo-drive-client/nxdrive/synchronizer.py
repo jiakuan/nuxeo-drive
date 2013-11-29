@@ -900,7 +900,12 @@ class Synchronizer(object):
                           'remote_info = %s \n\n'
                           'Going to stop ndrive process gracefully.' %
                           (local_info_str, remote_info_str))
-                # self._controller.stop()
+                self._controller.stop()
+
+                # Raise an error to stop synchronisation
+                raise RuntimeError('Conflicted file detected, please resolve '
+                                   'it and start ndrive again.')
+
 
             # new_local_name = remote_client.conflicted_name(
             #     doc_pair.local_name)
@@ -1155,6 +1160,8 @@ class Synchronizer(object):
                     # for this local_folder and should be dealt with
                     # in the main loop
                     raise e
+            except RuntimeError as e:
+                raise e
             except Exception as e:
                 # Unexpected exception: blacklist for a cooldown period
                 log.error("Failed to sync %r, blacklisting doc pair "
