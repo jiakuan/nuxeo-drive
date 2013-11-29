@@ -145,6 +145,9 @@ def find_first_name_match(name, possible_pairs):
                 return pair
     return None
 
+class ConflictedError(RuntimeError):
+    def __init__(self, msg):
+        RuntimeError.__init__(self, msg)
 
 class Synchronizer(object):
     """Handle synchronization operations between the client FS and Nuxeo"""
@@ -903,8 +906,8 @@ class Synchronizer(object):
                 self._controller.stop()
 
                 # Raise an error to stop synchronisation
-                raise RuntimeError('Conflicted file detected, please resolve '
-                                   'it and start ndrive again.')
+                raise ConflictedError('Conflicted file detected, please '
+                                      'resolve it and start ndrive again.')
 
 
             # new_local_name = remote_client.conflicted_name(
@@ -1160,7 +1163,7 @@ class Synchronizer(object):
                     # for this local_folder and should be dealt with
                     # in the main loop
                     raise e
-            except RuntimeError as e:
+            except ConflictedError as e:
                 raise e
             except Exception as e:
                 # Unexpected exception: blacklist for a cooldown period
