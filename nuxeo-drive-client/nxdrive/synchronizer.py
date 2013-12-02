@@ -240,6 +240,7 @@ class Synchronizer(object):
         file_or_folder = 'folder' if doc_pair.folderish else 'file'
         if not locally_modified:
             if not keep_root:
+                self._controller.stop()
                 raise DeletingLocalError(
                     "Deleting local %s '%s' " %
                     (file_or_folder, doc_pair.get_local_abspath()))
@@ -1174,6 +1175,8 @@ class Synchronizer(object):
                     # in the main loop
                     raise e
             except ConflictedError as e:
+                raise e
+            except DeletingLocalError as e:
                 raise e
             except Exception as e:
                 # Unexpected exception: blacklist for a cooldown period
