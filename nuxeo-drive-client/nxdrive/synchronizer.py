@@ -145,6 +145,15 @@ def find_first_name_match(name, possible_pairs):
                 return pair
     return None
 
+# Temporary runtime error to investigate the issues of conflicted files
+class ConflictedError(RuntimeError):
+    def __init__(self, msg):
+        RuntimeError.__init__(self, msg)
+
+# Temporary runtime error to investigate the issues of deleting local files
+class DeletingLocalError(RuntimeError):
+    def __init__(self, msg):
+        RuntimeError.__init__(self, msg)
 
 class Synchronizer(object):
     """Handle synchronization operations between the client FS and Nuxeo"""
@@ -231,13 +240,19 @@ class Synchronizer(object):
         file_or_folder = 'folder' if doc_pair.folderish else 'file'
         if not locally_modified:
             if not keep_root:
+                if not self._is_told_to_stop():
+                    self._controller.stop()
+                    raise DeletingLocalError(
+                        "Deleting local %s '%s' " %
+                        (file_or_folder, doc_pair.get_local_abspath()))
+
                 # Not modified since last synchronization, delete
                 # file/folder and its pair state
-                if local_client.exists(doc_pair.local_path):
-                    log.debug("Deleting local %s '%s'",
-                              file_or_folder, doc_pair.get_local_abspath())
-                    local_client.delete(doc_pair.local_path)
-                session.delete(doc_pair)
+                # if local_client.exists(doc_pair.local_path):
+                #     log.debug("Deleting local %s '%s'",
+                #               file_or_folder, doc_pair.get_local_abspath())
+                #     local_client.delete(doc_pair.local_path)
+                # session.delete(doc_pair)
         else:
             log.debug("Marking local %s '%s' as unsynchronized as it has been"
                       " remotely deleted but locally modified"
@@ -888,19 +903,46 @@ class Synchronizer(object):
                 doc_pair.get_local_abspath())
             doc_pair.update_state('synchronized', 'synchronized')
         else:
-            new_local_name = remote_client.conflicted_name(
-                doc_pair.local_name)
-            log.debug('Conflict being handled by renaming local "%s" to "%s"',
-                      doc_pair.local_name, new_local_name)
+            # https://dev.practice-insight.com/youtrack/issue/PINUXEO-1459
+            #
+            # When conflicts detected, send error email notification and stop
+            # Nuxeo Drive gracefully before the actual synchronisation.
+            if not self._is_told_to_stop():
+                local_info_str = str(local_info.__dict__) if local_info else 'None'
+                remote_info_str = str(remote_info.__dict__) if remote_info else 'None'
+                log.error('Conflicted file detected: \n\n'
+                          'local_info = %s \n\n'
+                          'remote_info = %s \n\n'
+                          'Going to stop ndrive process gracefully.' %
+                          (local_info_str, remote_info_str))
+                self._controller.stop()
 
-            # Let's rename the file
-            # The new local item will be detected as a creation and
-            # synchronized by the next iteration of the sync loop
-            local_client.rename(doc_pair.local_path, new_local_name)
+                # Raise an error to stop synchronisation
+                raise ConflictedError('Conflicted file detected, please '
+                                      'resolve it and start ndrive again.')
 
-            # Let the remote win as if doing a regular creation
-            self._synchronize_remotely_created(doc_pair, session,
-                local_client, remote_client, local_info, remote_info)
+
+            # new_local_name = remote_client.conflicted_name(
+            #     doc_pair.local_name)
+            # log.debug('Conflict being handled by renaming local "%s" to "%s"',
+            #           doc_pair.local_name, new_local_name)
+            #
+            # # Let's rename the file
+            # # The new local item will be detected as a creation and
+            # # synchronized by the next iteration of the sync loop
+            # local_client.rename(doc_pair.local_path, new_local_name)
+            #
+            # # Let the remote win as if doing a regular creation
+            # self._synchronize_remotely_created(doc_pair, session,
+            #     local_client, remote_client, local_info, remote_info)
+
+    def _is_told_to_stop(self):
+        """Check whether another process has told the synchronizer to stop"""
+        stop_file = os.path.join(self._controller.config_folder,
+                                 "stop_%d" % os.getpid())
+        if os.path.exists(stop_file):
+            return True
+        return False
 
     def _detect_local_move_or_rename(self, doc_pair, session,
         local_client, local_info):
@@ -1133,6 +1175,10 @@ class Synchronizer(object):
                     # for this local_folder and should be dealt with
                     # in the main loop
                     raise e
+            except ConflictedError as e:
+                raise e
+            except DeletingLocalError as e:
+                raise e
             except Exception as e:
                 # Unexpected exception: blacklist for a cooldown period
                 log.error("Failed to sync %r, blacklisting doc pair "

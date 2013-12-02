@@ -16,7 +16,9 @@ DEFAULT_IGNORED_SUFFIXES = [
     '.swp',  # vim swap files
     '.lock',  # some process use file locks
     '.LOCK',  # other locks
+    '.tmp', # Ignore tmp files
     '.part',  # partially downloaded files
+    'Thumbs.db',
 ]
 
 BUFFER_SIZE = 1024 ** 2

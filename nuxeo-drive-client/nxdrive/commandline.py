@@ -21,6 +21,7 @@ from nxdrive.protocol_handler import parse_protocol_url
 from nxdrive.protocol_handler import register_protocol_handlers
 from nxdrive.startup import register_startup
 from nxdrive import __version__
+from nxdrive.utils import normalized_path
 
 
 DEFAULT_NX_DRIVE_FOLDER = default_nuxeo_drive_folder()
@@ -74,6 +75,11 @@ def make_cli_parser(add_subparsers=True):
         "--log-level-console",
         default="INFO",
         help="Minimum log level for the console log."
+    )
+    common_parser.add_argument(
+        "--log-level-email",
+        default="ERROR",
+        help="Minimum log level for the email notification."
     )
     common_parser.add_argument(
         "--log-filename",
@@ -287,10 +293,15 @@ class CliHandler(object):
             filename = os.path.join(
                 options.nxdrive_home, 'logs', 'nxdrive.log')
 
+        smtp_log_conf_file = os.path.join(
+                options.nxdrive_home, 'smtp-log.conf')
+        smtp_log_conf_file = os.path.expanduser(smtp_log_conf_file)
         configure(
             filename,
             file_level=options.log_level_file,
             console_level=options.log_level_console,
+            email_level=options.log_level_email,
+            smtp_log_conf_file = smtp_log_conf_file,
             command_name=options.command,
         )
 
@@ -318,6 +329,10 @@ class CliHandler(object):
 
         self.log = get_logger(__name__)
         self.log.debug("Command line: " + ' '.join(argv))
+        if command == 'start' or command == 'launch' or command == 'console':
+            self.log.error("This is a test email notification sent when Nuxeo "
+                           "Drive is just started, which indicates the error "
+                           "email notification is turned on correctly.")
 
         self._install_faulthandler(options)
 
