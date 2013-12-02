@@ -377,12 +377,16 @@ class LastKnownState(Base):
     def refresh_remote(self, client):
         """Update the state from the remote server info."""
         remote_info = client.get_info(self.remote_ref, raise_if_missing=False)
+        if remote_info is None:
+            log.info("INVESTIGATE: " + self.remote_ref + ": remote_info was None")
+
         self.update_remote(remote_info)
         return remote_info
 
     def update_remote(self, remote_info):
         """Update the state from the pre-fetched remote server info."""
         if remote_info is None:
+            log.info("INVESTIGATE: remote_info is None, and remote_state was %s" % self.remote_state)
             if self.remote_state in ('unknown', 'created', 'modified',
                                      'synchronized'):
                 self.update_state(remote_state='deleted')
