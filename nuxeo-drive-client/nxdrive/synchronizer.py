@@ -145,7 +145,13 @@ def find_first_name_match(name, possible_pairs):
                 return pair
     return None
 
+# Temporary runtime error to investigate the issues of conflicted files
 class ConflictedError(RuntimeError):
+    def __init__(self, msg):
+        RuntimeError.__init__(self, msg)
+
+# Temporary runtime error to investigate the issues of deleting local files
+class DeletingLocalError(RuntimeError):
     def __init__(self, msg):
         RuntimeError.__init__(self, msg)
 
@@ -234,13 +240,17 @@ class Synchronizer(object):
         file_or_folder = 'folder' if doc_pair.folderish else 'file'
         if not locally_modified:
             if not keep_root:
+                raise DeletingLocalError(
+                    "Deleting local %s '%s' " %
+                    (file_or_folder, doc_pair.get_local_abspath()))
+
                 # Not modified since last synchronization, delete
                 # file/folder and its pair state
-                if local_client.exists(doc_pair.local_path):
-                    log.debug("Deleting local %s '%s'",
-                              file_or_folder, doc_pair.get_local_abspath())
-                    local_client.delete(doc_pair.local_path)
-                session.delete(doc_pair)
+                # if local_client.exists(doc_pair.local_path):
+                #     log.debug("Deleting local %s '%s'",
+                #               file_or_folder, doc_pair.get_local_abspath())
+                #     local_client.delete(doc_pair.local_path)
+                # session.delete(doc_pair)
         else:
             log.debug("Marking local %s '%s' as unsynchronized as it has been"
                       " remotely deleted but locally modified"
