@@ -240,11 +240,26 @@ class Synchronizer(object):
         file_or_folder = 'folder' if doc_pair.folderish else 'file'
         if not locally_modified:
             if not keep_root:
-                if not self._is_told_to_stop():
-                    self._controller.stop()
-                    raise DeletingLocalError(
-                        "Deleting local %s '%s' " %
-                        (file_or_folder, doc_pair.get_local_abspath()))
+                from nxdrive.client.common import DEFAULT_IGNORED_SUFFIXES
+                ignored = False
+                for suffix in DEFAULT_IGNORED_SUFFIXES:
+                    if doc_pair.get_local_abspath().endswith(suffix):
+                        ignored = True
+                        break
+                if not ignored:
+                    if not self._is_told_to_stop():
+                        self._controller.stop()
+                        raise DeletingLocalError(
+                            "Deleting local %s '%s' " %
+                            (file_or_folder, doc_pair.get_local_abspath()))
+                else:
+                    # Not modified since last synchronization, delete
+                    # file/folder and its pair state
+                    if local_client.exists(doc_pair.local_path):
+                        log.debug("Deleting local %s '%s'",
+                                  file_or_folder, doc_pair.get_local_abspath())
+                        local_client.delete(doc_pair.local_path)
+                    session.delete(doc_pair)
 
                 # Not modified since last synchronization, delete
                 # file/folder and its pair state
