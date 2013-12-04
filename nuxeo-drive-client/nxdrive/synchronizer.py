@@ -376,6 +376,9 @@ class Synchronizer(object):
             doc_pair.update_local(None)
 
     def _mark_unknown_local_recursive(self, session, doc_pair):
+        log.info("INVESTIGATE: _mark_unknown_local_recursive() - "
+                 "going to _mark_unknown_local_recursive, doc_pair=%s, " %
+                 (doc_pair))
         """Recursively mark local unsynchronized pair state as 'unknown'"""
         if doc_pair.local_path is not None:
             # Delete descendants first
@@ -490,6 +493,10 @@ class Synchronizer(object):
     def scan_remote(self, server_binding_or_local_path, from_state=None,
                     session=None):
         """Recursively scan the bound remote folder looking for updates"""
+        log.info("INVESTIGATE: scan_remote() - "
+                 "going to scan remote, from_state=%s, "
+                 "server_binding_or_local_path=%s" %
+                 (from_state, server_binding_or_local_path))
         if session is None:
             session = self.get_session()
 
@@ -508,12 +515,20 @@ class Synchronizer(object):
         if from_state is None:
             from_state = session.query(LastKnownState).filter_by(
                 local_path='/', local_folder=server_binding.local_folder).one()
+            log.info("INVESTIGATE: scan_remote() - "
+                     "retrieved from_state from LastKnownState: %s" %
+                     (from_state))
 
         try:
             client = self.get_remote_fs_client(from_state.server_binding)
             remote_info = client.get_info(from_state.remote_ref)
+            log.info("INVESTIGATE: scan_remote() - "
+                     "got remote_info: %s, by remote_ref: %s" %
+                     (remote_info, from_state.remote_ref))
         except NotFound:
             log.debug("Marking %r as remotely deleted.", from_state)
+            log.info("INVESTIGATE: scan_remote() - "
+                     "got NotFound exception, from_state=%s" % from_state)
             from_state.update_remote(None)
             session.commit()
             return
@@ -525,6 +540,8 @@ class Synchronizer(object):
     def _mark_deleted_remote_recursive(self, session, doc_pair):
         """Update the metadata of the descendants of remotely deleted doc"""
         # delete descendants first
+        log.info("INVESTIGATE: _mark_deleted_remote_recursive() - "
+                 "doc_pair=%s" % (doc_pair))
         children = session.query(LastKnownState).filter_by(
             local_folder=doc_pair.local_folder,
             remote_parent_ref=doc_pair.remote_ref).all()
@@ -546,6 +563,9 @@ class Synchronizer(object):
         If force_recursion is True, recursion is done even on
         non newly created children.
         """
+        log.info("INVESTIGATE: _scan_remote_recursive() - "
+                 "going to _scan_remote_recursive, doc_pair=%s, "
+                 "remote_info=%s, force_recursion=%s" % (doc_pair, remote_info, force_recursion))
         if remote_info is None:
             raise ValueError("Cannot bind %r to missing remote info" %
                              doc_pair)
@@ -565,11 +585,16 @@ class Synchronizer(object):
 
         # Detect recently deleted children
         children_info = client.get_children_info(remote_info.uid)
+        log.info("INVESTIGATE: _scan_remote_recursive() - "
+                 "got children info: remote_info.uid=%s, doc_pair=%s, " %
+                 (remote_info.uid, doc_pair))
         children_refs = set(c.uid for c in children_info)
 
         selectionTag = LastKnownState.select_remote_refs(session,
                                                          children_refs,
                                                          self.page_size)
+        log.info("INVESTIGATE: _scan_remote_recursive() - "
+                 "selectionTag=%s" % (selectionTag))
         for deleted in LastKnownState.not_selected(
                             session.query(LastKnownState)
                                 .filter_by(local_folder=doc_pair.local_folder,
@@ -604,6 +629,8 @@ class Synchronizer(object):
         from the provided child_info.
 
         """
+        log.info("INVESTIGATE: _find_remote_child_match_or_create() - "
+                 "parent_pair=%s, child_info=%s" % (parent_pair, child_info))
         session = self.get_session() if session is None else session
         child_name = child_info.name
         if not child_info.folderish:
@@ -1469,6 +1496,10 @@ class Synchronizer(object):
         try:
             tick = time()
             first_pass = server_binding.last_sync_date is None
+
+            log.info("INVESTIGATE: update_synchronize_server() - "
+                     "getting remote changes, server_binding=%s" %
+                     (server_binding.__dict__))
             summary, checkpoint = self._get_remote_changes(
                 server_binding, session=session)
 
