@@ -244,11 +244,11 @@ class Synchronizer(object):
                 from nxdrive.client.common import DEFAULT_IGNORED_PREFIXES
                 ignored = False
                 for suffix in DEFAULT_IGNORED_SUFFIXES:
-                    if doc_pair.get_local_abspath().endswith(suffix):
+                    if doc_pair.local_name.endswith(suffix):
                         ignored = True
                         break
                 for prefix in DEFAULT_IGNORED_PREFIXES:
-                    if doc_pair.get_local_abspath().startswith(prefix):
+                    if doc_pair.local_name.startswith(prefix):
                         ignored = True
                         break
                 if not ignored:
