@@ -241,9 +241,14 @@ class Synchronizer(object):
         if not locally_modified:
             if not keep_root:
                 from nxdrive.client.common import DEFAULT_IGNORED_SUFFIXES
+                from nxdrive.client.common import DEFAULT_IGNORED_PREFIXES
                 ignored = False
                 for suffix in DEFAULT_IGNORED_SUFFIXES:
                     if doc_pair.get_local_abspath().endswith(suffix):
+                        ignored = True
+                        break
+                for prefix in DEFAULT_IGNORED_PREFIXES:
+                    if doc_pair.get_local_abspath().startswith(prefix):
                         ignored = True
                         break
                 if not ignored:
