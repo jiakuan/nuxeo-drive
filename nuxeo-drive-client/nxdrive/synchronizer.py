@@ -1321,7 +1321,7 @@ class Synchronizer(object):
                 if self.should_stop_synchronization():
                     log.info("Stopping synchronization (pid=%d)", pid)
                     break
-                if (max_loops is not None and loop_count > max_loops):
+                if (max_loops is not None and loop_count >= max_loops):
                     log.info("Stopping synchronization after %d loops",
                              loop_count)
                     break
