@@ -87,7 +87,7 @@ public final class NuxeoDriveIntegrationTestsHelper {
         }
 
         // Invalidate user profile cache
-        Framework.getLocalService(UserProfileService.class).clearCache();
+//        Framework.getLocalService(UserProfileService.class).clearCache();
     }
 
     public static String getDefaultDomainPath(CoreSession session)
